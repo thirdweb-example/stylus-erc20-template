@@ -37,8 +37,6 @@ impl MyStylusERC20 {
     #[constructor]
     pub fn constructor(&mut self, owner: Address) {
         let _ = self.ownable._set_owner(owner);
-
-        // TODO: initialize name and symbol here
     }
 
     pub fn mint_to(&mut self, to: Address, value: U256) -> Result<(), String> {
