@@ -1,16 +1,12 @@
 //! modified from: https://stylus-by-example.org/applications/erc20
-//! 
+//!
 //! this contract is not audited
 
 use alloc::string::String;
 use alloy_primitives::{Address, U256};
 use alloy_sol_types::sol;
 use core::marker::PhantomData;
-use stylus_sdk::{
-    evm,
-    msg,
-    prelude::*,
-};
+use stylus_sdk::prelude::*;
 
 pub trait ERC20Params {
     const NAME: &'static str;
@@ -69,18 +65,13 @@ impl Ownable {
         }
 
         self.owner.set(new_owner);
-        
+
         Ok(())
     }
 }
 
 impl<T: ERC20Params> Erc20<T> {
-    pub fn _transfer(
-        &mut self,
-        from: Address,
-        to: Address,
-        value: U256,
-    ) -> Result<(), String> {
+    pub fn _transfer(&mut self, from: Address, to: Address, value: U256) -> Result<(), String> {
         let mut sender_balance = self.balances.setter(from);
         let old_sender_balance = sender_balance.get();
         if old_sender_balance < value {
@@ -92,7 +83,7 @@ impl<T: ERC20Params> Erc20<T> {
         let new_to_balance = to_balance.get() + value;
         to_balance.set(new_to_balance);
 
-        evm::log(Transfer { from, to, value });
+        self.vm().log(Transfer { from, to, value });
         Ok(())
     }
 
@@ -103,7 +94,7 @@ impl<T: ERC20Params> Erc20<T> {
 
         self.total_supply.set(self.total_supply.get() + value);
 
-        evm::log(Transfer {
+        self.vm().log(Transfer {
             from: Address::ZERO,
             to: address,
             value,
@@ -122,7 +113,7 @@ impl<T: ERC20Params> Erc20<T> {
 
         self.total_supply.set(self.total_supply.get() - value);
 
-        evm::log(Transfer {
+        self.vm().log(Transfer {
             from: address,
             to: Address::ZERO,
             value,
@@ -155,7 +146,7 @@ impl<T: ERC20Params> Erc20<T> {
     }
 
     pub fn transfer(&mut self, to: Address, value: U256) -> Result<bool, String> {
-        self._transfer(msg::sender(), to, value)?;
+        self._transfer(self.vm().msg_sender(), to, value)?;
         Ok(true)
     }
 
@@ -165,8 +156,9 @@ impl<T: ERC20Params> Erc20<T> {
         to: Address,
         value: U256,
     ) -> Result<bool, String> {
+        let sender = self.vm().msg_sender();
         let mut sender_allowances = self.allowances.setter(from);
-        let mut allowance = sender_allowances.setter(msg::sender());
+        let mut allowance = sender_allowances.setter(sender);
         let old_allowance = allowance.get();
         if old_allowance < value {
             return Err("Insufficient allowance".into());
@@ -180,9 +172,11 @@ impl<T: ERC20Params> Erc20<T> {
     }
 
     pub fn approve(&mut self, spender: Address, value: U256) -> bool {
-        self.allowances.setter(msg::sender()).insert(spender, value);
-        evm::log(Approval {
-            owner: msg::sender(),
+        self.allowances
+            .setter(self.vm().msg_sender())
+            .insert(spender, value);
+        self.vm().log(Approval {
+            owner: self.vm().msg_sender(),
             spender,
             value,
         });

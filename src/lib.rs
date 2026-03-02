@@ -1,5 +1,5 @@
 //! modified from: https://stylus-by-example.org/applications/erc20
-//! 
+//!
 //! this contract is not audited
 
 #![cfg_attr(not(any(feature = "export-abi", test)), no_main)]
@@ -7,12 +7,9 @@ extern crate alloc;
 
 mod erc20;
 
+use crate::erc20::{ERC20Params, Erc20, Ownable};
 use alloy_primitives::{Address, U256};
-use stylus_sdk::{
-    msg,
-    prelude::*
-};
-use crate::erc20::{Erc20, ERC20Params, Ownable};
+use stylus_sdk::prelude::*;
 
 struct MyStylusERC20Params;
 impl ERC20Params for MyStylusERC20Params {
@@ -32,7 +29,6 @@ sol_storage! {
 }
 
 #[public]
-#[inherit(Erc20<MyStylusERC20Params>, Ownable)]
 impl MyStylusERC20 {
     #[constructor]
     pub fn constructor(&mut self, owner: Address) {
@@ -46,7 +42,7 @@ impl MyStylusERC20 {
     }
 
     pub fn burn(&mut self, value: U256) -> Result<(), String> {
-        self.erc20.burn(msg::sender(), value)?;
+        self.erc20.burn(self.vm().msg_sender(), value)?;
         Ok(())
     }
 }
